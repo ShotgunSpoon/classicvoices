@@ -1,0 +1,27 @@
+name: Recover NVDA voice folders
+on: workflow_dispatch
+permissions:
+  actions: read
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download original encrypted voice data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 41077778792 -R ShotgunSpoon/classicvoices -n ClassicVoicesNVDAData -D original
+      - name: Repackage with recovery password
+        env:
+          ORIGINAL_PASSWORD: ${{ secrets.IPA_PASSWORD }}
+          RECOVERY_PASSWORD: ${{ secrets.CLASSICVOICES_RECOVERY_PASSWORD }}
+        run: |
+          mkdir recovered
+          unzip -q -P "$ORIGINAL_PASSWORD" original/ClassicVoicesNVDA-data.zip -d recovered
+          cd recovered
+          zip -q -r -P "$RECOVERY_PASSWORD" ../ClassicVoicesNVDA-recovery.zip Voices Native
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ClassicVoicesNVDARecovery
+          path: ClassicVoicesNVDA-recovery.zip
+          retention-days: 1
